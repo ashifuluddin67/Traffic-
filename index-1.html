@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Traffic Signal: Green Time That Follows the Traffic</title>
+<style>
+:root { color-scheme: light; --bg: #ffffff; --surface: #f5f4f0; --text: #1a1a18; --muted: #5f5e5a; --border: rgba(0,0,0,0.12); --border-strong: rgba(0,0,0,0.3); --accent: #0F6E56; --accent-bg: #E1F5EE; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --bg: #1c1c1a; --surface: #2a2a27; --text: #f1efe8; --muted: #b4b2a9; --border: rgba(255,255,255,0.14); --border-strong: rgba(255,255,255,0.3); --accent: #5DCAA5; --accent-bg: #04342C; } }
+:root[data-theme="dark"] { color-scheme: dark; --bg: #1c1c1a; --surface: #2a2a27; --text: #f1efe8; --muted: #b4b2a9; --border: rgba(255,255,255,0.14); --border-strong: rgba(255,255,255,0.3); --accent: #5DCAA5; --accent-bg: #04342C; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.6; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 18px; }
+.hero { padding: 52px 0 32px; background: var(--accent-bg); }
+.hero .tag { display: inline-block; font-size: 12px; color: var(--accent); border: 0.5px solid var(--accent); border-radius: 999px; padding: 2px 10px; margin-bottom: 12px; }
+.hero h1 { font-size: 30px; font-weight: 500; margin: 0 0 10px; line-height: 1.2; color: var(--text); }
+.hero p { font-size: 16px; color: var(--text); margin: 0; }
+nav { display: flex; gap: 16px; padding: 14px 0; font-size: 14px; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
+nav a { color: var(--accent); text-decoration: none; }
+section { padding: 34px 0; border-bottom: 0.5px solid var(--border); }
+h2 { font-size: 22px; font-weight: 500; margin: 0 0 8px; }
+h3 { font-size: 16px; font-weight: 500; margin: 20px 0 6px; }
+p { color: var(--muted); margin: 0 0 12px; font-size: 15px; }
+ul, ol { color: var(--muted); padding-left: 20px; margin: 0 0 12px; font-size: 15px; }
+li { margin-bottom: 6px; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-top: 14px; }
+.card { background: var(--surface); border-radius: 12px; padding: 16px; }
+.card h3 { margin-top: 0; }
+.card p { margin: 0; font-size: 14px; }
+.row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.row .lbl { font-size: 14px; color: var(--muted); min-width: 60px; }
+.row input[type=range] { flex: 1; accent-color: var(--accent); }
+.val { font-size: 14px; font-weight: 500; min-width: 110px; text-align: right; }
+.demo { background: var(--surface); border-radius: 12px; padding: 16px; }
+button { font: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 0.5px solid var(--border-strong); border-radius: 8px; padding: 9px 16px; cursor: pointer; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-top: 12px; }
+.stat { background: var(--bg); border-radius: 8px; padding: 12px; }
+.stat .k { font-size: 12px; color: var(--muted); margin: 0; }
+.stat .v { font-size: 20px; font-weight: 500; margin: 4px 0 0; color: var(--text); }
+svg { display: block; width: 100%; height: auto; }
+.note { font-size: 14px; color: var(--muted); margin: 10px 0 0; min-height: 20px; }
+.foot { font-size: 13px; color: var(--muted); padding: 24px 0 40px; }
+@media (max-width: 520px) { .cards { grid-template-columns: 1fr; } .stats { grid-template-columns: 1fr 1fr; } .hero h1 { font-size: 24px; } }
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="wrap">
+<span class="tag">Traffic · Smart city</span>
+<h1>A traffic signal that gives green time to the busier road</h1>
+<p>Fixed timers give every road the same time, even when one road is empty. This project tests a simple rule that adjusts green time to the traffic.</p>
+</div>
+</header>
+<nav class="wrap">
+<a href="#problem">The problem</a>
+<a href="#how">How it works</a>
+<a href="#demo">Try the demo</a>
+<a href="#safety">Safety</a>
+<a href="#citizen">What you can do</a>
+</nav>
+
+<section id="problem" class="wrap">
+<h2>The problem</h2>
+<p>When a signal gives green to an empty road while a busy road queues, time and fuel are wasted. Long idling also adds to emissions and frustration at the junction.</p>
+<div class="cards">
+<div class="card">
+<h3>Wasted green</h3>
+<p>A fixed 15 second green on an empty road is 15 seconds of no movement.</p>
+</div>
+<div class="card">
+<h3>Longer queues</h3>
+<p>The busy road waits for a cycle that does not match its traffic.</p>
+</div>
+</div>
+</section>
+
+<section id="how" class="wrap">
+<h2>How it works</h2>
+<p>Sensors on each road measure how often a vehicle is present in a 20 second window. That share of time is called occupancy, a number from 0 to 1.</p>
+<ol>
+<li>Measure occupancy on each road.</li>
+<li>Set green time: 5 seconds plus 20 seconds times occupancy. So the range is 5 to 25 seconds.</li>
+<li>Keep yellow at 3 seconds and all-red at 1 second, fixed for safety.</li>
+<li>Repeat for each road in turn.</li>
+</ol>
+</section>
+
+<section id="demo" class="wrap">
+<h2>Try the demo</h2>
+<p>Change the occupancy for each road, then run one cycle. The lights change in order, about five times faster than real time.</p>
+<div class="demo">
+<svg viewBox="0 0 380 340" role="img" aria-label="Top view of a four-way junction with traffic lights">
+<rect x="0" y="150" width="380" height="60" fill="#D3D1C7"/>
+<rect x="150" y="0" width="60" height="340" fill="#D3D1C7"/>
+<rect x="150" y="150" width="60" height="60" fill="#B4B2A9"/>
+<text x="180" y="20" text-anchor="middle" font-size="13" fill="var(--text)">North</text>
+<text x="350" y="186" text-anchor="middle" font-size="13" fill="var(--text)">East</text>
+<text x="180" y="330" text-anchor="middle" font-size="13" fill="var(--text)">South</text>
+<text x="22" y="186" text-anchor="middle" font-size="13" fill="var(--text)">West</text>
+<circle id="l0" cx="210" cy="120" r="9" fill="#E24B4A" stroke="#2C2C2A" stroke-width="0.5"/>
+<circle id="l1" cx="240" cy="165" r="9" fill="#E24B4A" stroke="#2C2C2A" stroke-width="0.5"/>
+<circle id="l2" cx="150" cy="220" r="9" fill="#E24B4A" stroke="#2C2C2A" stroke-width="0.5"/>
+<circle id="l3" cx="120" cy="175" r="9" fill="#E24B4A" stroke="#2C2C2A" stroke-width="0.5"/>
+</svg>
+<div id="rows" style="margin-top:12px"></div>
+<div style="margin:12px 0 0;"><button type="button" id="run">Run one cycle</button></div>
+<p id="st" class="note"></p>
+<div class="stats">
+<div class="stat"><p class="k">Adaptive cycle</p><p id="cyc" class="v">0 s</p></div>
+<div class="stat"><p class="k">Fixed 15 s timer</p><p class="v">76 s</p></div>
+<div class="stat"><p class="k">Animation speed</p><p class="v">5× real</p></div>
+</div>
+</div>
+</section>
+
+<section id="safety" class="wrap">
+<h2>Safety rules</h2>
+<ul>
+<li>Every road always gets a minimum green, so no road is left waiting forever.</li>
+<li>No road gets more than the maximum green, so one busy road cannot block the others.</li>
+<li>Yellow and all-red times never change with traffic.</li>
+<li>Pedestrian crossing time must never be shortened. On a real junction this is checked first.</li>
+</ul>
+</section>
+
+<section id="citizen" class="wrap">
+<h2>What you can do</h2>
+<ul>
+<li>Do not block the junction. Wait behind the stop line, even when the light turns green.</li>
+<li>Switch off the engine when stuck in a long queue, where it is safe to do so.</li>
+<li>Report a faulty or stuck signal to the official traffic police helpline.</li>
+<li>Consider public transport or carpooling at peak hours.</li>
+</ul>
+</section>
+
+<div class="wrap foot">Educational prototype. The demo uses toy traffic on a model junction, so it does not represent real Indian roads. Expected benefits are to be measured, not assumed.</div>
+
+<script>
+var names = ['North', 'East', 'South', 'West'];
+var occ = [0.2, 0.6, 0.9, 0.1];
+var lights = ['l0', 'l1', 'l2', 'l3'];
+var COL = { red: '#E24B4A', yellow: '#EF9F27', green: '#639922' };
+var rowsEl = document.getElementById('rows');
+var cycEl = document.getElementById('cyc');
+var st = document.getElementById('st');
+var runId = 0;
+names.forEach(function (n, i) {
+  var row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = '<span class="lbl">' + n + '</span>'
+    + '<input type="range" min="0" max="1" step="0.05" value="' + occ[i] + '" data-i="' + i + '">'
+    + '<span id="g' + i + '" class="val"></span>';
+  rowsEl.appendChild(row);
+});
+function greenOf(i) { return 5 + 20 * occ[i]; }
+function refresh() {
+  var total = 0;
+  names.forEach(function (n, i) {
+    document.getElementById('g' + i).textContent = 'Occupancy ' + occ[i].toFixed(2) + ' → ' + greenOf(i).toFixed(0) + ' s';
+    total += greenOf(i) + 4;
+  });
+  cycEl.textContent = Math.round(total) + ' s';
+}
+rowsEl.addEventListener('input', function (e) {
+  occ[parseInt(e.target.dataset.i, 10)] = parseFloat(e.target.value);
+  refresh();
+});
+function setLight(i, c) {
+  lights.forEach(function (id, j) {
+    document.getElementById(id).setAttribute('fill', j === i ? COL[c] : COL.red);
+  });
+}
+function allRed() {
+  lights.forEach(function (id) { document.getElementById(id).setAttribute('fill', COL.red); });
+}
+document.getElementById('run').addEventListener('click', function () {
+  runId++;
+  var my = runId;
+  var steps = [];
+  names.forEach(function (n, i) {
+    steps.push({ i: i, c: 'green', t: greenOf(i), label: n + ' green for ' + greenOf(i).toFixed(0) + ' s' });
+    steps.push({ i: i, c: 'yellow', t: 3, label: n + ' yellow for 3 s' });
+    steps.push({ i: -1, t: 1, label: 'All red for 1 s' });
+  });
+  var k = 0;
+  function next() {
+    if (my !== runId) return;
+    if (k >= steps.length) { st.textContent = 'Cycle finished.'; return; }
+    var s = steps[k++];
+    if (s.i < 0) allRed(); else setLight(s.i, s.c);
+    st.textContent = s.label;
+    setTimeout(next, s.t * 200);
+  }
+  next();
+});
+refresh();
+</script>
+</body>
+</html>
